@@ -41,7 +41,7 @@
               <span class="icon-bar"></span>
             </button>
             <a class="brand" href="@path/">
-              <img src="@assets/common/images/gitbucket.png"/>GitBucket
+              <img src="@assets/common/images/gitbucket.png"/><i>Git XiamenAir</i>
               @defining(servlet.AutoUpdate.getCurrentVersion){ version =>
                 <span class="header-version">@version.majorVersion.@version.minorVersion</span>
               }
@@ -74,6 +74,17 @@
     </div>
     <div class="container body">
       @body
+    </div>
+    <div class="container">
+      <div class="pull-right">
+        &copy; 2014 XiamenAir CO. LTD. All Rights Reserved<br />
+        Developed by Software R&D Dept.
+      </div>
+      <footer class="text-center text-justify">
+        <a href="http://msysgit.github.io/">Git</a> | 
+        <a href="http://code.google.com/p/tortoisegit/">TortoiseGit</a> | 
+        Powered by <a href="https://github.com/takezoe/gitbucket">GitBucket</a>
+      </footer>
     </div>
     <script>
       $(function(){
