@@ -4,7 +4,7 @@
   @if(account.nonEmpty && account.get.image.nonEmpty){
     <img src="@path/@account.get.userName/_avatar" style="with: 120px; height: 120px;"/>
   } else {
-    <div id="clickable">
+    <div id="clickable" data-toggle="tooltip" data-placement="bottom" title="Drag image or click here to change your avatar">
       <a href="https://www.gravatar.com/" target="_blank">Gravatar</a> is used
     </div>
   }
