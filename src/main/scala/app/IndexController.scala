@@ -21,8 +21,8 @@ trait IndexControllerBase extends ControllerBase {
     val loginAccount = context.loginAccount
 
     html.index(getRecentActivities(),
-      getVisibleRepositories(loginAccount, baseUrl),
-      loginAccount.map{ account => getUserRepositories(account.userName, baseUrl) }.getOrElse(Nil)
+      getVisibleRepositories(loginAccount, context.baseUrl),
+      loginAccount.map{ account => getUserRepositories(account.userName, context.baseUrl) }.getOrElse(Nil)
     )
   }
 
@@ -46,6 +46,11 @@ trait IndexControllerBase extends ControllerBase {
     redirect("/")
   }
 
+  get("/activities.atom"){
+    contentType = "application/atom+xml; type=feed"
+    helper.xml.feed(getRecentActivities())
+  }
+
   /**
    * Set account information into HttpSession and redirect.
    */
@@ -54,7 +59,7 @@ trait IndexControllerBase extends ControllerBase {
     updateLastLoginDate(account.userName)
 
     flash.get(Keys.Flash.Redirect).asInstanceOf[Option[String]].map { redirectUrl =>
-      if(redirectUrl.replaceFirst("/$", "") == request.getContextPath){
+      if(redirectUrl.stripSuffix("/") == request.getContextPath){
         redirect("/")
       } else {
         redirect(redirectUrl)

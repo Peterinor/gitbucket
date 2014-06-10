@@ -112,11 +112,17 @@ trait AccountControllerBase extends AccountManagementControllerBase {
           val members = getGroupMembers(account.userName)
           _root_.account.html.repositories(account,
             if(account.isGroupAccount) Nil else getGroupsByUserName(userName),
-            getVisibleRepositories(context.loginAccount, baseUrl, Some(userName)),
+            getVisibleRepositories(context.loginAccount, context.baseUrl, Some(userName)),
             context.loginAccount.exists(x => members.exists { member => member.userName == x.userName && member.isManager }))
         }
       }
     } getOrElse NotFound
+  }
+
+  get("/:userName.atom") {
+    val userName = params("userName")
+    contentType = "application/atom+xml; type=feed"
+    helper.xml.feed(getActivitiesByUser(userName, true))
   }
 
   get("/:userName/_avatar"){
@@ -286,7 +292,7 @@ trait AccountControllerBase extends AccountManagementControllerBase {
    */
   post("/new", newRepositoryForm)(usersOnly { form =>
     LockUtil.lock(s"${form.owner}/${form.name}/create"){
-      if(getRepository(form.owner, form.name, baseUrl).isEmpty){
+      if(getRepository(form.owner, form.name, context.baseUrl).isEmpty){
         val ownerAccount  = getAccountByUserName(form.owner).get
         val loginAccount  = context.loginAccount.get
         val loginUserName = loginAccount.userName
@@ -349,47 +355,42 @@ trait AccountControllerBase extends AccountManagementControllerBase {
     val loginUserName  = loginAccount.userName
 
     LockUtil.lock(s"${loginUserName}/${repository.name}/create"){
-      if(repository.owner == loginUserName){
-        // redirect to the repository
-        redirect(s"/${repository.owner}/${repository.name}")
+      if(repository.owner == loginUserName || getRepository(loginAccount.userName, repository.name, baseUrl).isDefined){
+        // redirect to the repository if repository already exists
+        redirect(s"/${loginUserName}/${repository.name}")
       } else {
-        getForkedRepositories(repository.owner, repository.name).find(_._1 == loginUserName).map { case (owner, name) =>
-          // redirect to the repository
-          redirect(s"/${owner}/${name}")
-        } getOrElse {
-          // Insert to the database at first
-          val originUserName = repository.repository.originUserName.getOrElse(repository.owner)
-          val originRepositoryName = repository.repository.originRepositoryName.getOrElse(repository.name)
+        // Insert to the database at first
+        val originUserName = repository.repository.originUserName.getOrElse(repository.owner)
+        val originRepositoryName = repository.repository.originRepositoryName.getOrElse(repository.name)
 
-          createRepository(
-            repositoryName       = repository.name,
-            userName             = loginUserName,
-            description          = repository.repository.description,
-            isPrivate            = repository.repository.isPrivate,
-            originRepositoryName = Some(originRepositoryName),
-            originUserName       = Some(originUserName),
-            parentRepositoryName = Some(repository.name),
-            parentUserName       = Some(repository.owner)
-          )
+        createRepository(
+          repositoryName       = repository.name,
+          userName             = loginUserName,
+          description          = repository.repository.description,
+          isPrivate            = repository.repository.isPrivate,
+          originRepositoryName = Some(originRepositoryName),
+          originUserName       = Some(originUserName),
+          parentRepositoryName = Some(repository.name),
+          parentUserName       = Some(repository.owner)
+        )
 
-          // Insert default labels
-          insertDefaultLabels(loginUserName, repository.name)
+        // Insert default labels
+        insertDefaultLabels(loginUserName, repository.name)
 
-          // clone repository actually
-          JGitUtil.cloneRepository(
-            getRepositoryDir(repository.owner, repository.name),
-            getRepositoryDir(loginUserName, repository.name))
+        // clone repository actually
+        JGitUtil.cloneRepository(
+          getRepositoryDir(repository.owner, repository.name),
+          getRepositoryDir(loginUserName, repository.name))
 
-          // Create Wiki repository
-          JGitUtil.cloneRepository(
-            getWikiRepositoryDir(repository.owner, repository.name),
-            getWikiRepositoryDir(loginUserName, repository.name))
+        // Create Wiki repository
+        JGitUtil.cloneRepository(
+          getWikiRepositoryDir(repository.owner, repository.name),
+          getWikiRepositoryDir(loginUserName, repository.name))
 
-          // Record activity
-          recordForkActivity(repository.owner, repository.name, loginUserName)
-          // redirect to the repository
-          redirect(s"/${loginUserName}/${repository.name}")
-        }
+        // Record activity
+        recordForkActivity(repository.owner, repository.name, loginUserName)
+        // redirect to the repository
+        redirect(s"/${loginUserName}/${repository.name}")
       }
     }
   })

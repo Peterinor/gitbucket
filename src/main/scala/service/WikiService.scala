@@ -97,7 +97,7 @@ trait WikiService {
     using(Git.open(Directory.getWikiRepositoryDir(owner, repository))){ git =>
       JGitUtil.getFileList(git, "master", ".")
         .filter(_.name.endsWith(".md"))
-        .map(_.name.replaceFirst("\\.md$", ""))
+        .map(_.name.stripSuffix(".md"))
         .sortBy(x => x)
     }
   }
@@ -143,7 +143,7 @@ trait WikiService {
           val revertInfo = (p.getFiles.asScala.map { fh =>
             fh.getChangeType match {
               case DiffEntry.ChangeType.MODIFY => {
-                val source = getWikiPage(owner, repository, fh.getNewPath.replaceFirst("\\.md$", "")).map(_.content).getOrElse("")
+                val source = getWikiPage(owner, repository, fh.getNewPath.stripSuffix(".md")).map(_.content).getOrElse("")
                 val applied = PatchUtil.apply(source, patch, fh)
                 if(applied != null){
                   Seq(RevertInfo("ADD", fh.getNewPath, applied))
@@ -175,17 +175,9 @@ trait WikiService {
             val inserter = git.getRepository.newObjectInserter()
             val headId   = git.getRepository.resolve(Constants.HEAD + "^{commit}")
 
-            using(new RevWalk(git.getRepository)){ revWalk =>
-              using(new TreeWalk(git.getRepository)){ treeWalk =>
-                val index = treeWalk.addTree(revWalk.parseTree(headId))
-                treeWalk.setRecursive(true)
-                while(treeWalk.next){
-                  val path = treeWalk.getPathString
-                  val tree = treeWalk.getTree(index, classOf[CanonicalTreeParser])
-                  if(revertInfo.find(x => x.filePath == path).isEmpty){
-                    builder.add(JGitUtil.createDirCacheEntry(path, tree.getEntryFileMode, tree.getEntryObjectId))
-                  }
-                }
+            JGitUtil.processTree(git, headId){ (path, tree) =>
+              if(revertInfo.find(x => x.filePath == path).isEmpty){
+                builder.add(JGitUtil.createDirCacheEntry(path, tree.getEntryFileMode, tree.getEntryObjectId))
               }
             }
 
@@ -226,22 +218,14 @@ trait WikiService {
         var removed  = false
 
         if(headId != null){
-          using(new RevWalk(git.getRepository)){ revWalk =>
-            using(new TreeWalk(git.getRepository)){ treeWalk =>
-              val index = treeWalk.addTree(revWalk.parseTree(headId))
-              treeWalk.setRecursive(true)
-              while(treeWalk.next){
-                val path = treeWalk.getPathString
-                val tree = treeWalk.getTree(index, classOf[CanonicalTreeParser])
-                if(path == currentPageName + ".md" && currentPageName != newPageName){
-                  removed = true
-                } else if(path != newPageName + ".md"){
-                  builder.add(JGitUtil.createDirCacheEntry(path, tree.getEntryFileMode, tree.getEntryObjectId))
-                } else {
-                  created = false
-                  updated = JGitUtil.getContentFromId(git, tree.getEntryObjectId, true).map(new String(_, "UTF-8") != content).getOrElse(false)
-                }
-              }
+          JGitUtil.processTree(git, headId){ (path, tree) =>
+            if(path == currentPageName + ".md" && currentPageName != newPageName){
+              removed = true
+            } else if(path != newPageName + ".md"){
+              builder.add(JGitUtil.createDirCacheEntry(path, tree.getEntryFileMode, tree.getEntryObjectId))
+            } else {
+              created = false
+              updated = JGitUtil.getContentFromId(git, tree.getEntryObjectId, true).map(new String(_, "UTF-8") != content).getOrElse(false)
             }
           }
         }
@@ -262,7 +246,7 @@ trait WikiService {
               message
             })
 
-          Some(newHeadId)
+          Some(newHeadId.getName)
         } else None
       }
     }
@@ -280,25 +264,16 @@ trait WikiService {
         val headId   = git.getRepository.resolve(Constants.HEAD + "^{commit}")
         var removed  = false
 
-        using(new RevWalk(git.getRepository)){ revWalk =>
-          using(new TreeWalk(git.getRepository)){ treeWalk =>
-            val index = treeWalk.addTree(revWalk.parseTree(headId))
-            treeWalk.setRecursive(true)
-            while(treeWalk.next){
-              val path = treeWalk.getPathString
-              val tree = treeWalk.getTree(index, classOf[CanonicalTreeParser])
-              if(path != pageName + ".md"){
-                builder.add(JGitUtil.createDirCacheEntry(path, tree.getEntryFileMode, tree.getEntryObjectId))
-              } else {
-                removed = true
-              }
-            }
+        JGitUtil.processTree(git, headId){ (path, tree) =>
+          if(path != pageName + ".md"){
+            builder.add(JGitUtil.createDirCacheEntry(path, tree.getEntryFileMode, tree.getEntryObjectId))
+          } else {
+            removed = true
           }
-
-          if(removed){
-            builder.finish()
-            JGitUtil.createNewCommit(git, inserter, headId, builder.getDirCache.writeTree(inserter), committer, mailAddress, message)
-          }
+        }
+        if(removed){
+          builder.finish()
+          JGitUtil.createNewCommit(git, inserter, headId, builder.getDirCache.writeTree(inserter), committer, mailAddress, message)
         }
       }
     }

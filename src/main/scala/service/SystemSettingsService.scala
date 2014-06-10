@@ -7,11 +7,7 @@ import javax.servlet.http.HttpServletRequest
 
 trait SystemSettingsService {
 
-  def baseUrl(implicit request: HttpServletRequest): String = loadSystemSettings().baseUrl.getOrElse {
-    defining(request.getRequestURL.toString){ url =>
-      url.substring(0, url.length - (request.getRequestURI.length - request.getContextPath.length))
-    }
-  }.replaceFirst("/$", "")
+  def baseUrl(implicit request: HttpServletRequest): String = loadSystemSettings().baseUrl(request)
 
   def saveSystemSettings(settings: SystemSettings): Unit = {
     defining(new java.util.Properties()){ props =>
@@ -47,7 +43,9 @@ trait SystemSettingsService {
           ldap.keystore.foreach(x => props.setProperty(LdapKeystore, x))
         }
       }
-      props.store(new java.io.FileOutputStream(GitBucketConf), null)
+      using(new java.io.FileOutputStream(GitBucketConf)){ out =>
+        props.store(out, null)
+      }
     }
   }
 
@@ -55,7 +53,9 @@ trait SystemSettingsService {
   def loadSystemSettings(): SystemSettings = {
     defining(new java.util.Properties()){ props =>
       if(GitBucketConf.exists){
-        props.load(new java.io.FileInputStream(GitBucketConf))
+        using(new java.io.FileInputStream(GitBucketConf)){ in =>
+          props.load(in)
+        }
       }
       SystemSettings(
         getOptionValue[String](props, BaseURL, None).map(x => x.replaceFirst("/\\Z", "")),
@@ -110,7 +110,13 @@ object SystemSettingsService {
     sshPort: Option[Int],
     smtp: Option[Smtp],
     ldapAuthentication: Boolean,
-    ldap: Option[Ldap])
+    ldap: Option[Ldap]){
+    def baseUrl(request: HttpServletRequest): String = baseUrl.getOrElse {
+      defining(request.getRequestURL.toString){ url =>
+        url.substring(0, url.length - (request.getRequestURI.length - request.getContextPath.length))
+      }
+    }.stripSuffix("/")
+  }
 
   case class Ldap(
     host: String,

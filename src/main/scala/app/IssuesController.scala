@@ -118,7 +118,7 @@ trait IssuesControllerBase extends ControllerBase {
 
       // notifications
       Notifier().toNotify(repository, issueId, form.content.getOrElse("")){
-        Notifier.msgIssue(s"${baseUrl}/${owner}/${name}/issues/${issueId}")
+        Notifier.msgIssue(s"${context.baseUrl}/${owner}/${name}/issues/${issueId}")
       }
 
       redirect(s"/${owner}/${name}/issues/${issueId}")
@@ -273,6 +273,17 @@ trait IssuesControllerBase extends ControllerBase {
     }
   })
 
+  get("/:owner/:repository/_attached/:file")(referrersOnly { repository =>
+    (Directory.getAttachedDir(repository.owner, repository.name) match {
+      case dir if(dir.exists && dir.isDirectory) =>
+        dir.listFiles.find(_.getName.startsWith(params("file") + ".")).map { file =>
+          contentType = FileUtil.getMimeType(file.getName)
+          file
+        }
+      case _ => None
+    }) getOrElse NotFound
+  })
+
   val assignedUserName = (key: String) => params.get(key) filter (_.trim != "")
   val milestoneId: String => Option[Int] = (key: String) => params.get(key).flatMap(_.toIntOpt)
 
@@ -342,13 +353,13 @@ trait IssuesControllerBase extends ControllerBase {
           case f =>
             content foreach {
               f.toNotify(repository, issueId, _){
-                Notifier.msgComment(s"${baseUrl}/${owner}/${name}/${
+                Notifier.msgComment(s"${context.baseUrl}/${owner}/${name}/${
                   if(issue.isPullRequest) "pull" else "issues"}/${issueId}#comment-${commentId}")
               }
             }
             action foreach {
               f.toNotify(repository, issueId, _){
-                Notifier.msgStatus(s"${baseUrl}/${owner}/${name}/issues/${issueId}")
+                Notifier.msgStatus(s"${context.baseUrl}/${owner}/${name}/issues/${issueId}")
               }
             }
         }

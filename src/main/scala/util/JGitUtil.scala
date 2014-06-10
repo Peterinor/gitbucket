@@ -92,8 +92,9 @@ object JGitUtil {
    *
    * @param viewType "image", "large" or "other"
    * @param content the string content
+   * @param charset the character encoding
    */
-  case class ContentInfo(viewType: String, content: Option[String])
+  case class ContentInfo(viewType: String, content: Option[String], charset: Option[String])
 
   /**
    * The tag data.
@@ -145,12 +146,12 @@ object JGitUtil {
           commitCount,
           // branches
           git.branchList.call.asScala.map { ref =>
-            ref.getName.replaceFirst("^refs/heads/", "")
+            ref.getName.stripPrefix("refs/heads/")
           }.toList,
           // tags
           git.tagList.call.asScala.map { ref =>
             val revCommit = getRevCommitFromId(git, ref.getObjectId)
-            TagInfo(ref.getName.replaceFirst("^refs/tags/", ""), revCommit.getCommitterIdent.getWhen, revCommit.getName)
+            TagInfo(ref.getName.stripPrefix("refs/tags/"), revCommit.getCommitterIdent.getWhen, revCommit.getName)
           }.toList
         )
       } catch {
@@ -189,7 +190,7 @@ object JGitUtil {
               val targetPath = walker.getPathString
               if((path + "/").startsWith(targetPath)){
                 true
-              } else if(targetPath.startsWith(path + "/") && targetPath.substring(path.length + 1).indexOf("/") < 0){
+              } else if(targetPath.startsWith(path + "/") && targetPath.substring(path.length + 1).indexOf('/') < 0){
                 stopRecursive = true
                 treeWalk.setRecursive(false)
                 true
@@ -371,7 +372,12 @@ object JGitUtil {
 
       if(commits.length >= 2){
         // not initial commit
-        val oldCommit = commits(1)
+        val oldCommit = if(revCommit.getParentCount >= 2) {
+          // merge commit
+          revCommit.getParents.head
+        } else {
+          commits(1)
+        }
         (getDiffs(git, oldCommit.getName, id, fetchContent), Some(oldCommit.getName))
 
       } else {
@@ -480,7 +486,7 @@ object JGitUtil {
   }
 
   def createNewCommit(git: Git, inserter: ObjectInserter, headId: AnyObjectId, treeId: AnyObjectId,
-                              fullName: String, mailAddress: String, message: String): String = {
+                              fullName: String, mailAddress: String, message: String): ObjectId = {
     val newCommit = new CommitBuilder()
     newCommit.setCommitter(new PersonIdent(fullName, mailAddress))
     newCommit.setAuthor(new PersonIdent(fullName, mailAddress))
@@ -498,7 +504,7 @@ object JGitUtil {
     refUpdate.setNewObjectId(newHeadId)
     refUpdate.update()
 
-    newHeadId.getName
+    newHeadId
   }
 
   /**
@@ -549,6 +555,26 @@ object JGitUtil {
     }
   }
 
+  def getContentInfo(git: Git, path: String, objectId: ObjectId): ContentInfo = {
+    // Viewer
+    val large  = FileUtil.isLarge(git.getRepository.getObjectDatabase.open(objectId).getSize)
+    val viewer = if(FileUtil.isImage(path)) "image" else if(large) "large" else "other"
+    val bytes  = if(viewer == "other") JGitUtil.getContentFromId(git, objectId, false) else None
+
+    if(viewer == "other"){
+      if(bytes.isDefined && FileUtil.isText(bytes.get)){
+        // text
+        ContentInfo("text", Some(StringUtil.convertFromByteArray(bytes.get)), Some(StringUtil.detectEncoding(bytes.get)))
+      } else {
+        // binary
+        ContentInfo("binary", None, None)
+      }
+    } else {
+      // image or large
+      ContentInfo(viewer, None, None)
+    }
+  }
+
   /**
    * Get object content of the given object id as byte array from the Git repository.
    *
@@ -583,5 +609,29 @@ object JGitUtil {
     }
     existIds.toSeq
   }
+
+  def processTree(git: Git, id: ObjectId)(f: (String, CanonicalTreeParser) => Unit) = {
+    using(new RevWalk(git.getRepository)){ revWalk =>
+      using(new TreeWalk(git.getRepository)){ treeWalk =>
+        val index = treeWalk.addTree(revWalk.parseTree(id))
+        treeWalk.setRecursive(true)
+        while(treeWalk.next){
+          f(treeWalk.getPathString, treeWalk.getTree(index, classOf[CanonicalTreeParser]))
+        }
+      }
+    }
+  }
+
+  /**
+   * Returns the identifier of the root commit (or latest merge commit) of the specified branch.
+   */
+  def getForkedCommitId(oldGit: Git, newGit: Git,
+                        userName: String, repositoryName: String, branch: String,
+                        requestUserName: String, requestRepositoryName: String, requestBranch: String): String =
+    defining(getAllCommitIds(oldGit)){ existIds =>
+      getCommitLogs(newGit, requestBranch, true) { commit =>
+        existIds.contains(commit.name) && getBranchesOfCommit(oldGit, commit.getName).contains(branch)
+      }.head.id
+    }
 
 }
