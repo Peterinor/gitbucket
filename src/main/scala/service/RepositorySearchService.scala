@@ -3,20 +3,20 @@ package service
 import util.{FileUtil, StringUtil, JGitUtil}
 import util.Directory._
 import util.ControlUtil._
-import model.Issue
 import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.treewalk.TreeWalk
 import org.eclipse.jgit.lib.FileMode
 import org.eclipse.jgit.api.Git
+import model.Profile._
+import profile.simple._
 
-trait
-RepositorySearchService { self: IssuesService =>
+trait RepositorySearchService { self: IssuesService =>
   import RepositorySearchService._
 
-  def countIssues(owner: String, repository: String, query: String): Int =
+  def countIssues(owner: String, repository: String, query: String)(implicit session: Session): Int =
     searchIssuesByKeyword(owner, repository, query).length
 
-  def searchIssues(owner: String, repository: String, query: String): List[IssueSearchResult] =
+  def searchIssues(owner: String, repository: String, query: String)(implicit session: Session): List[IssueSearchResult] =
     searchIssuesByKeyword(owner, repository, query).map { case (issue, commentCount, content) =>
       IssueSearchResult(
         issue.issueId,
@@ -107,7 +107,7 @@ object RepositorySearchService {
 
   case class SearchResult(
     files : List[(String, String)],
-    issues: List[(Issue, Int, String)])
+    issues: List[(model.Issue, Int, String)])
 
   case class IssueSearchResult(
     issueId: Int,

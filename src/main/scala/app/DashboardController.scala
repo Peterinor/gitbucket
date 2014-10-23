@@ -48,22 +48,22 @@ trait DashboardControllerBase extends ControllerBase {
       else session.getAs[IssueSearchCondition](Keys.Session.DashboardIssues).getOrElse(IssueSearchCondition())
     )
 
-    val userName = context.loginAccount.get.userName
-    val repositories = getUserRepositories(userName, context.baseUrl).map(repo => repo.owner -> repo.name)
+    val userName   = context.loginAccount.get.userName
+    val userRepos  = getUserRepositories(userName, context.baseUrl, true).map(repo => repo.owner -> repo.name)
     val filterUser = Map(filter -> userName)
     val page = IssueSearchCondition.page(request)
-    // 
+
     dashboard.html.issues(
-        issues.html.listparts(
-            searchIssue(condition, filterUser, false, (page - 1) * IssueLimit, IssueLimit, repositories: _*),
+        dashboard.html.issueslist(
+            searchIssue(condition, filterUser, false, (page - 1) * IssueLimit, IssueLimit, userRepos: _*),
             page,
-            countIssue(condition.copy(state = "open"), filterUser, false, repositories: _*),
-            countIssue(condition.copy(state = "closed"), filterUser, false, repositories: _*),
+            countIssue(condition.copy(state = "open"  ), filterUser, false, userRepos: _*),
+            countIssue(condition.copy(state = "closed"), filterUser, false, userRepos: _*),
             condition),
-        countIssue(condition, Map.empty, false, repositories: _*),
-        countIssue(condition, Map("assigned" -> userName), false, repositories: _*),
-        countIssue(condition, Map("created_by" -> userName), false, repositories: _*),
-        countIssueGroupByRepository(condition, filterUser, false, repositories: _*),
+        countIssue(condition.copy(assigned = None, author = None), filterUser, false, userRepos: _*),
+        countIssue(condition.copy(assigned = Some(userName), author = None), filterUser, false, userRepos: _*),
+        countIssue(condition.copy(assigned = None, author = Some(userName)), filterUser, false, userRepos: _*),
+        countIssueGroupByRepository(condition, filterUser, false, userRepos: _*),
         condition,
         filter)    
     
@@ -79,26 +79,27 @@ trait DashboardControllerBase extends ControllerBase {
       else session.getAs[IssueSearchCondition](Keys.Session.DashboardPulls).getOrElse(IssueSearchCondition())
     }.copy(repo = repository))
 
-    val userName = context.loginAccount.get.userName
-    val repositories = getUserRepositories(userName, context.baseUrl).map(repo => repo.owner -> repo.name)
+    val userName   = context.loginAccount.get.userName
+    val allRepos   = getAllRepositories(userName)
+    val userRepos  = getUserRepositories(userName, context.baseUrl, true).map(repo => repo.owner -> repo.name)
     val filterUser = Map(filter -> userName)
     val page = IssueSearchCondition.page(request)
 
     val counts = countIssueGroupByRepository(
-      IssueSearchCondition().copy(state = condition.state), Map.empty, true, repositories: _*)
+      IssueSearchCondition().copy(state = condition.state), filterUser, true, userRepos: _*)
 
     dashboard.html.pulls(
-      pulls.html.listparts(
-        searchIssue(condition, filterUser, true, (page - 1) * PullRequestLimit, PullRequestLimit, repositories: _*),
+      dashboard.html.pullslist(
+        searchIssue(condition, filterUser, true, (page - 1) * PullRequestLimit, PullRequestLimit, allRepos: _*),
         page,
-        countIssue(condition.copy(state = "open"), filterUser, true, repositories: _*),
-        countIssue(condition.copy(state = "closed"), filterUser, true, repositories: _*),
+        countIssue(condition.copy(state = "open"  ), filterUser, true, allRepos: _*),
+        countIssue(condition.copy(state = "closed"), filterUser, true, allRepos: _*),
         condition,
         None,
         false),
-      getPullRequestCountGroupByUser(condition.state == "closed", userName, None),
-      getRepositoryNamesOfUser(userName).map { RepoName =>
-        (userName, RepoName, counts.collectFirst { case (_, RepoName, count) => count }.getOrElse(0))
+      getAllPullRequestCountGroupByUser(condition.state == "closed", userName),
+      userRepos.map { case (userName, repoName) =>
+        (userName, repoName, counts.find { x => x._1 == userName && x._2 == repoName }.map(_._3).getOrElse(0))
       }.sortBy(_._3).reverse,
       condition,
       filter)

@@ -3,7 +3,6 @@
 /****************************************************************************/
 body {
   color: #333;
-  line-height: 100%;
 }
 
 li p {
@@ -37,9 +36,6 @@ h6 {
   font-size: 18px;
 }
 
-h7 {
-  font-size: 14px;
-}
 
 /* ======================================================================== */
 /* Global Header */
@@ -98,6 +94,13 @@ div.input-prepend span.count {
   padding-bottom: 6px;
 }
 
+img.plugin-global-menu {
+  width: 16px;
+  height: 16px;
+  position: relative;
+  top: -2px;
+}
+
 /* ======================================================================== */
 /* General Styles */
 /* ======================================================================== */
@@ -114,6 +117,11 @@ div.head div.forked {
 
 div.container {
   width: 920px;
+}
+
+div.container-wide {
+  padding-left: 10px;
+  padding-right: 10px;
 }
 
 div.pagination {
@@ -386,12 +394,14 @@ div.signin-form {
 /* Account page */
 /****************************************************************************/
 .account-fullname {
-  font-size: 140%;
+  margin-top: 20px;
+  font-size: 180%;
   font-weight: bold;
 }
 
 .account-username {
-  font-size: 120%;
+  margin-top: 10px;
+  font-size: 140%;
   color: #888888;
   font-weight: bold;
 }
@@ -502,6 +512,10 @@ a.header-link:hover {
   text-decoration: none;
 }
 
+table.blobview {
+  table-layout: fixed;
+}
+
 table.table-file-list {
   margin-bottom: 0px;
   border: 1px solid #ddd;
@@ -584,6 +598,7 @@ pre.blob {
   border: none;
   background-color: white;
   padding-left: 20px;
+  font-size: 12px;
 }
 
 #readme {
@@ -598,11 +613,85 @@ li.highlight {
   background-color: #ffb;
 }
 
+span.simplified-path {
+  color: #888;
+}
+
+/****************************************************************************/
+/* nav pulls group */
+/****************************************************************************/
+.nav-pills-group:after {
+    display: table;
+    line-height: 0;
+    content: "";
+}
+
+.nav-pills-group:after {
+    clear: both;
+}
+
+.nav-pills-group > li {
+    float: left;
+}
+
+.nav-pills-group > li > a {
+    padding-right: 12px;
+    padding-left: 12px;
+    line-height: 14px;
+    color: #666;
+    font-weight: bold;
+}
+
+.nav-pills-group > li > a {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    border-left   : 1px solid #e5e5e5;
+    border-top    : 1px solid #e5e5e5;
+    border-bottom : 1px solid #e5e5e5;
+}
+
+.nav-pills-group > .first > a {
+    -webkit-border-radius: 4px 0 0 4px;
+    -moz-border-radius: 4px 0 0 4px;
+    border-radius: 4px 0 0 4px;
+}
+
+.nav-pills-group > .last > a {
+    -webkit-border-radius: 0 4px 4px 0;
+    -moz-border-radius: 0 4px 4px 0;
+    border-radius: 0 4px 4px 0;
+    border-right  : 1px solid #e5e5e5;
+}
+
+.nav-pills-group > .active > a,
+.nav-pills-group > .active > a:hover,
+.nav-pills-group > .active > a:focus {
+    color: #ffffff;
+    background-color: #0088cc;
+    border-color: #0088cc;
+}
+
 /****************************************************************************/
 /* Issues */
 /****************************************************************************/
+.btn-group.open .dropdown-toggle.flat {
+    background-image: none;
+    -webkit-box-shadow: none;
+    -moz-box-shadow: none;
+    box-shadow: none;
+}
+
+a.button-link {
+    font-weight: normal;
+    color: gray;
+}
+
+a.selected {
+    font-weight: bold;
+    color: black;
+}
+
 span.issue-status {
-  display: block;
   font-size: large;
   text-align: center;
   padding: 8px;
@@ -615,7 +704,7 @@ table.table-issues {
 a.issue-title {
   color: #333;
   font-weight: bold;
-  size: 110%;
+  font-size: 120%;
 }
 
 ul.label-list {
@@ -652,8 +741,7 @@ span.milestone-alert {
 }
 
 a.milestone-title {
-  font-size: 120%;
-  font-weight: bold;
+  font-size: 180%;
 }
 
 div.milestone-description {
@@ -661,13 +749,12 @@ div.milestone-description {
   color: #666;
 }
 
-div.milestone-menu {
-  font-size: 80%;
+a.milestone-title {
+  color: #333;
 }
 
-div.milestone-menu a {
-  margin-left: 8px;
-  font-weight: bold;
+div.milestone-menu {
+ margin-top: 8px;
 }
 
 div.milestone-menu a.delete {
@@ -679,13 +766,13 @@ div#milestone-progress-area {
 }
 
 div#milestone-progress-area div.milestone-progress {
-  width: 150px;
+  width: 130px;
   margin-bottom: -6px;
 }
 
 div.milestone-progress {
   position: relative;
-  height: 20px;
+  height: 10px;
   color: white;
   margin-bottom: 4px;
   font-weight: bold;
@@ -704,11 +791,6 @@ span.milestone-progress {
   border-radius: 4px;
   -webkit-border-radius: 4px;
   -moz-border-radius: 4px;
-}
-
-span.milestone-percentage {
-  position: absolute;
-  padding-left: 8px;
 }
 
 div.issue-header {
@@ -817,18 +899,33 @@ a.absent {
 }
 
 /****************************************************************************/
+/* Commit */
+/****************************************************************************/
+div.author-info div.committer {
+  display: block;
+  margin-left: 25px;
+  font-size: 12px;
+}
+
+/****************************************************************************/
 /* Diff */
 /****************************************************************************/
-table.inlinediff {
+table.diff {
+    font-size: 12px;
+    font-family: Monaco, Menlo, Consolas, "Courier New", monospace;
     width: 100%;
 }
 
-table.inlinediff thead {
+table.diff thead {
     display: none;
 }
 
-td.insert, td.equal, td.delete {
+table.inlinediff td.insert, table.inlinediff td.equal, table.inlinediff td.delete {
     width: 100%;
+}
+
+td.insert, td.equal, td.delete, td.empty {
+    width: 50%;
 }
 
 /****************************************************************************/
@@ -859,12 +956,57 @@ ul.collaborator a.remove {
 /****************************************************************************/
 /* Markdown */
 /****************************************************************************/
+div.markdown-body {
+  line-height: 1.7;
+  font: 15px Helvetica, arial, freesans, clean, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol";
+  word-wrap: break-word;
+}
 div.markdown-body h1 {
   border-bottom: 1px solid #ddd;
+  font-size: 2.5em;
+  font-weight: bold;
 }
 
 div.markdown-body h2 {
   border-bottom: 1px solid #eee;
+  font-size: 2em;
+}
+
+div.markdown-body h3 {
+  font-size: 1.5em;
+}
+
+div.markdown-body h4 {
+  font-size: 1.2em;
+}
+
+div.markdown-body h5 {
+  font-size: 1em;
+}
+
+div.markdown-body h6 {
+  color:#777;
+  font-size: 1em;
+}
+
+div.markdown-body li {
+  line-height: 1.7;
+}
+
+div.markdown-body p {
+  margin: 15px 0;
+  line-height: 1.7;
+}
+
+div.markdown-body pre {
+  font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  font-size: 12px;
+  white-space: pre;
+}
+
+div.markdown-body code {
+  font-size: 12px;
+  padding: 0 5px;
 }
 
 div.markdown-body table {
@@ -1002,6 +1144,7 @@ div.markdown-body table colgroup + tbody tr:first-child td:last-child {
 
 .markdown-head {
   position: relative;
+  line-height: 1.7;
 }
 
 a.markdown-anchor-link {
@@ -1015,25 +1158,25 @@ a.markdown-anchor-link {
 }
 
 h1 a.markdown-anchor-link {
-  top: 8px;
+  top: 24px;
 }
 
 h2 a.markdown-anchor-link {
-  top: 6px;
+  top: 20px;
 }
 
 h3 a.markdown-anchor-link {
-  top: 6px;
+  top: 12px;
 }
 
 h4 a.markdown-anchor-link {
-  top: 2px;
+  top: 8px;
 }
 
 h5 a.markdown-anchor-link {
-  top: 2px;
+  top: 6px;
 }
 
 h6 a.markdown-anchor-link {
-  top: 2px;
+  top: 6px;
 }

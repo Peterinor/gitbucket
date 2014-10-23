@@ -10,6 +10,8 @@ import util.Directory._
 import util.ControlUtil._
 import org.eclipse.jgit.api.Git
 import util.Directory
+import plugin.PluginUpdateJob
+import service.SystemSettingsService
 
 object AutoUpdate {
   
@@ -51,6 +53,30 @@ object AutoUpdate {
    * The history of versions. A head of this sequence is the current BitBucket version.
    */
   val versions = Seq(
+    new Version(2, 4),
+    new Version(2, 3) {
+      override def update(conn: Connection): Unit = {
+        super.update(conn)
+        using(conn.createStatement.executeQuery("SELECT ACTIVITY_ID, ADDITIONAL_INFO FROM ACTIVITY WHERE ACTIVITY_TYPE='push'")){ rs =>
+          while(rs.next) {
+            val info = rs.getString("ADDITIONAL_INFO")
+            val newInfo = info.split("\n").filter(_ matches "^[0-9a-z]{40}:.*").mkString("\n")
+            if (info != newInfo) {
+              val id = rs.getString("ACTIVITY_ID")
+              using(conn.prepareStatement("UPDATE ACTIVITY SET ADDITIONAL_INFO=? WHERE ACTIVITY_ID=?")) { sql =>
+                sql.setString(1, newInfo)
+                sql.setLong(2, id.toLong)
+                sql.executeUpdate
+              }
+            }
+          }
+        }
+        FileUtils.deleteDirectory(Directory.getPluginCacheDir())
+        FileUtils.deleteDirectory(new File(Directory.PluginHome))
+      }
+    },
+    new Version(2, 2),
+    new Version(2, 1),
     new Version(2, 0){
       override def update(conn: Connection): Unit = {
         import eu.medsea.mimeutil.{MimeUtil2, MimeType}
@@ -143,19 +169,24 @@ object AutoUpdate {
  * Update database schema automatically in the context initializing.
  */
 class AutoUpdateListener extends ServletContextListener {
+  import org.quartz.impl.StdSchedulerFactory
   import AutoUpdate._
+
   private val logger = LoggerFactory.getLogger(classOf[AutoUpdateListener])
+  private val scheduler = StdSchedulerFactory.getDefaultScheduler
   
   override def contextInitialized(event: ServletContextEvent): Unit = {
-    val datadir = event.getServletContext.getInitParameter("gitbucket.home")
-    if(datadir != null){
-      System.setProperty("gitbucket.home", datadir)
+    val dataDir = event.getServletContext.getInitParameter("gitbucket.home")
+    if(dataDir != null){
+      System.setProperty("gitbucket.home", dataDir)
     }
     org.h2.Driver.load()
-    event.getServletContext.setInitParameter("db.url", s"jdbc:h2:${DatabaseHome};MVCC=true")
 
-    logger.debug("Start schema update")
+    val context = event.getServletContext
+    context.setInitParameter("db.url", s"jdbc:h2:${DatabaseHome};MVCC=true")
+
     defining(getConnection(event.getServletContext)){ conn =>
+      logger.debug("Start schema update")
       try {
         defining(getCurrentVersion()){ currentVersion =>
           if(currentVersion == headVersion){
@@ -165,7 +196,6 @@ class AutoUpdateListener extends ServletContextListener {
           } else {
             versions.takeWhile(_ != currentVersion).reverse.foreach(_.update(conn))
             FileUtils.writeStringToFile(versionFile, headVersion.versionString, "UTF-8")
-            conn.commit()
             logger.debug(s"Updated from ${currentVersion.versionString} to ${headVersion.versionString}")
           }
         }
@@ -176,16 +206,43 @@ class AutoUpdateListener extends ServletContextListener {
           conn.rollback()
         }
       }
+      logger.debug("End schema update")
     }
-    logger.debug("End schema update")
+
+    if(SystemSettingsService.enablePluginSystem){
+      getDatabase(context).withSession { implicit session =>
+        logger.debug("Starting plugin system...")
+        try {
+          plugin.PluginSystem.init()
+
+          scheduler.start()
+          PluginUpdateJob.schedule(scheduler)
+          logger.debug("PluginUpdateJob is started.")
+
+          logger.debug("Plugin system is initialized.")
+        } catch {
+          case ex: Throwable => {
+            logger.error("Failed to initialize plugin system", ex)
+            ex.printStackTrace()
+            throw ex
+          }
+        }
+      }
+    }
   }
 
   def contextDestroyed(sce: ServletContextEvent): Unit = {
-    // Nothing to do.
+    scheduler.shutdown()
   }
 
   private def getConnection(servletContext: ServletContext): Connection =
     DriverManager.getConnection(
+      servletContext.getInitParameter("db.url"),
+      servletContext.getInitParameter("db.user"),
+      servletContext.getInitParameter("db.password"))
+
+  private def getDatabase(servletContext: ServletContext): scala.slick.jdbc.JdbcBackend.Database =
+    slick.jdbc.JdbcBackend.Database.forURL(
       servletContext.getInitParameter("db.url"),
       servletContext.getInitParameter("db.user"),
       servletContext.getInitParameter("db.password"))

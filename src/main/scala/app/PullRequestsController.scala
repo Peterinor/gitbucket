@@ -13,7 +13,6 @@ import org.eclipse.jgit.lib.{ObjectId, CommitBuilder, PersonIdent}
 import service.IssuesService._
 import service.PullRequestService._
 import util.JGitUtil.DiffInfo
-import service.RepositoryService.RepositoryTreeNode
 import util.JGitUtil.CommitInfo
 import org.slf4j.LoggerFactory
 import org.eclipse.jgit.merge.MergeStrategy
@@ -61,10 +60,6 @@ trait PullRequestsControllerBase extends ControllerBase {
 
   get("/:owner/:repository/pulls")(referrersOnly { repository =>
     searchPullRequests(None, repository)
-  })
-
-  get("/:owner/:repository/pulls/:userName")(referrersOnly { repository =>
-    searchPullRequests(Some(params("userName")), repository)
   })
 
   get("/:owner/:repository/pull/:id")(referrersOnly { repository =>
@@ -124,7 +119,7 @@ trait PullRequestsControllerBase extends ControllerBase {
     params("id").toIntOpt.flatMap { issueId =>
       val owner = repository.owner
       val name  = repository.name
-      LockUtil.lock(s"${owner}/${name}/merge"){
+      LockUtil.lock(s"${owner}/${name}"){
         getPullRequest(owner, name, issueId).map { case (issue, pullreq) =>
           using(Git.open(getRepositoryDir(owner, name))) { git =>
             // mark issue as merged and close.
@@ -157,7 +152,7 @@ trait PullRequestsControllerBase extends ControllerBase {
             val personIdent = new PersonIdent(loginAccount.fullName, loginAccount.mailAddress)
             mergeCommit.setAuthor(personIdent)
             mergeCommit.setCommitter(personIdent)
-            mergeCommit.setMessage(s"Merge pull request #${issueId} from ${pullreq.requestUserName}/${pullreq.requestRepositoryName}\n\n" +
+            mergeCommit.setMessage(s"Merge pull request #${issueId} from ${pullreq.requestUserName}/${pullreq.requestBranch}\n\n" +
                                    form.message)
 
             // insertObject and got mergeCommit Object Id
@@ -367,7 +362,7 @@ trait PullRequestsControllerBase extends ControllerBase {
    */
   private def checkConflict(userName: String, repositoryName: String, branch: String,
                             requestUserName: String, requestRepositoryName: String, requestBranch: String): Boolean = {
-    LockUtil.lock(s"${userName}/${repositoryName}/merge-check"){
+    LockUtil.lock(s"${userName}/${repositoryName}"){
       using(Git.open(getRepositoryDir(requestUserName, requestRepositoryName))) { git =>
         val remoteRefName = s"refs/heads/${branch}"
         val tmpRefName = s"refs/merge-check/${userName}/${branch}"
@@ -403,7 +398,7 @@ trait PullRequestsControllerBase extends ControllerBase {
   private def checkConflictInPullRequest(userName: String, repositoryName: String, branch: String,
                                          requestUserName: String, requestRepositoryName: String, requestBranch: String,
                                          issueId: Int): Boolean = {
-    LockUtil.lock(s"${userName}/${repositoryName}/merge") {
+    LockUtil.lock(s"${userName}/${repositoryName}") {
       using(Git.open(getRepositoryDir(userName, repositoryName))) { git =>
         // merge
         val merger = MergeStrategy.RECURSIVE.newMerger(git.getRepository, true)
@@ -444,7 +439,7 @@ trait PullRequestsControllerBase extends ControllerBase {
       val commits = newGit.log.addRange(oldId, newId).call.iterator.asScala.map { revCommit =>
         new CommitInfo(revCommit)
       }.toList.splitWith { (commit1, commit2) =>
-        view.helpers.date(commit1.time) == view.helpers.date(commit2.time)
+        view.helpers.date(commit1.commitTime) == view.helpers.date(commit2.commitTime)
       }
 
       val diffs = JGitUtil.getDiffs(newGit, oldId.getName, newId.getName, true)
@@ -454,7 +449,6 @@ trait PullRequestsControllerBase extends ControllerBase {
 
   private def searchPullRequests(userName: Option[String], repository: RepositoryService.RepositoryInfo) =
     defining(repository.owner, repository.name){ case (owner, repoName) =>
-      val filterUser = userName.map { x => Map("created_by" -> x) } getOrElse Map("all" -> "")
       val page       = IssueSearchCondition.page(request)
       val sessionKey = Keys.Session.Pulls(owner, repoName)
 
@@ -464,14 +458,15 @@ trait PullRequestsControllerBase extends ControllerBase {
         else session.getAs[IssueSearchCondition](sessionKey).getOrElse(IssueSearchCondition())
       )
 
-      pulls.html.list(
-        searchIssue(condition, filterUser, true, (page - 1) * PullRequestLimit, PullRequestLimit, owner -> repoName),
-        getPullRequestCountGroupByUser(condition.state == "closed", owner, Some(repoName)),
-        userName,
+      issues.html.list(
+        "pulls",
+        searchIssue(condition, Map.empty, true, (page - 1) * PullRequestLimit, PullRequestLimit, owner -> repoName),
         page,
-        countIssue(condition.copy(state = "open"  ), filterUser, true, owner -> repoName),
-        countIssue(condition.copy(state = "closed"), filterUser, true, owner -> repoName),
-        countIssue(condition, Map.empty, true, owner -> repoName),
+        (getCollaborators(owner, repoName) :+ owner).sorted,
+        getMilestones(owner, repoName),
+        getLabels(owner, repoName),
+        countIssue(condition.copy(state = "open"  ), Map.empty, true, owner -> repoName),
+        countIssue(condition.copy(state = "closed"), Map.empty, true, owner -> repoName),
         condition,
         repository,
         hasWritePermission(owner, repoName, context.loginAccount))
