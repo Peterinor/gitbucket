@@ -10,6 +10,7 @@ $(function(){
   // activate tooltip
   $('img[data-toggle=tooltip]').tooltip();
   $('a[data-toggle=tooltip]').tooltip();
+  $('li[data-toggle=tooltip]').tooltip();
 
   // anchor icon for markdown
   $('.markdown-head').mouseenter(function(e){
@@ -35,12 +36,12 @@ $(function(){
   prettyPrint();
 });
 
-function displayErrors(data){
+function displayErrors(data, elem){
   var i = 0;
   $.each(data, function(key, value){
-    $('#error-' + key.split(".").join("_")).text(value);
+    $('#error-' + key.split(".").join("_"), elem).text(value);
     if(i === 0){
-      $('#' + key).focus();
+      $('#' + key, elem).focus();
     }
     i++;
   });

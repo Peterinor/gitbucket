@@ -1,7 +1,7 @@
-GitBucket [![Gitter chat](https://badges.gitter.im/takezoe/gitbucket.png)](https://gitter.im/takezoe/gitbucket) [![Build Status](https://buildhive.cloudbees.com/job/takezoe/job/gitbucket/badge/icon)](https://buildhive.cloudbees.com/job/takezoe/job/gitbucket/)
+GitBucket [![Gitter chat](https://badges.gitter.im/takezoe/gitbucket.png)](https://gitter.im/takezoe/gitbucket) [![Build Status](https://travis-ci.org/takezoe/gitbucket.svg?branch=master)](https://travis-ci.org/takezoe/gitbucket)
 =========
 
-GitBucket is the easily installable Github clone written with Scala.
+GitBucket is the easily installable GitHub clone powered by Scala.
 
 
 Features
@@ -23,7 +23,6 @@ The current version of GitBucket provides a basic features below:
 
 Following features are not implemented, but we will make them in the future release!
 
-- Comment for the changeset
 - Network graph
 - Statistics
 - Watch / Star
@@ -80,6 +79,38 @@ Run the following commands in `Terminal` to
 
 Release Notes
 --------
+### 3.0 - 3 Mar 2015
+- New plug-in system is available
+- Connection pooling by c3p0
+- New branch UI
+- Compare between specified commit ids
+
+### 2.8 - 1 Feb 2015
+- New logo and icons
+- New system setting options to control visibility
+- Comment on side-by-side diff
+- Information message on sign-in page
+- Fork repository by group account
+
+### 2.7 - 29 Dec 2014
+- Comment for commit and diff
+- Fix security issue in markdown rendering
+- Some bug fix and improvements
+
+### 2.6 - 24 Nov 2014
+- Search box at issues and pull requests
+- Information from administrator
+- Pull request UI has been updated
+- Move to TravisCI from Buildhive
+- Some bug fix and improvements
+
+### 2.5 - 4 Nov 2014
+- New Dashboard
+- Change datetime format
+- Create branch from Web UI
+- Task list in Markdown
+- Some bug fix and improvements
+
 ### 2.4.1 - 6 Oct 2014
 - Bug fix
 

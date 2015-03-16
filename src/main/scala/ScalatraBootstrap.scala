@@ -1,5 +1,9 @@
-import _root_.servlet.{PluginActionInvokeFilter, BasicAuthenticationFilter, TransactionFilter}
-import app._
+
+import gitbucket.core.controller._
+import gitbucket.core.plugin.PluginRegistry
+import gitbucket.core.servlet.{TransactionFilter, BasicAuthenticationFilter}
+import gitbucket.core.util.Directory
+
 //import jp.sf.amateras.scalatra.forms.ValidationJavaScriptProvider
 import org.scalatra._
 import javax.servlet._
@@ -10,12 +14,16 @@ class ScalatraBootstrap extends LifeCycle {
     // Register TransactionFilter and BasicAuthenticationFilter at first
     context.addFilter("transactionFilter", new TransactionFilter)
     context.getFilterRegistration("transactionFilter").addMappingForUrlPatterns(EnumSet.allOf(classOf[DispatcherType]), true, "/*")
-    context.addFilter("pluginActionInvokeFilter", new PluginActionInvokeFilter)
-    context.getFilterRegistration("pluginActionInvokeFilter").addMappingForUrlPatterns(EnumSet.allOf(classOf[DispatcherType]), true, "/*")
     context.addFilter("basicAuthenticationFilter", new BasicAuthenticationFilter)
     context.getFilterRegistration("basicAuthenticationFilter").addMappingForUrlPatterns(EnumSet.allOf(classOf[DispatcherType]), true, "/git/*")
 
     // Register controllers
+    context.mount(new AnonymousAccessController, "/*")
+
+    PluginRegistry().getControllers.foreach { case (controller, path) =>
+      context.mount(controller, path)
+    }
+
     context.mount(new IndexController, "/")
     context.mount(new SearchController, "/")
     context.mount(new FileUploadController, "/upload")
@@ -32,7 +40,7 @@ class ScalatraBootstrap extends LifeCycle {
     context.mount(new RepositorySettingsController, "/*")
 
     // Create GITBUCKET_HOME directory if it does not exist
-    val dir = new java.io.File(_root_.util.Directory.GitBucketHome)
+    val dir = new java.io.File(Directory.GitBucketHome)
     if(!dir.exists){
       dir.mkdirs()
     }
