@@ -6,6 +6,7 @@
   files: List[gitbucket.core.util.JGitUtil.FileInfo],
   readme: Option[(List[String], String)],
   hasWritePermission: Boolean,
+  branchPullRequest: Option[(gitbucket.core.model.PullRequest, gitbucket.core.model.Issue)],
   info: Option[Any] = None,
   error: Option[Any] = None)(implicit context: gitbucket.core.controller.Context)
 @import context._
@@ -13,6 +14,17 @@
 @html.main(s"${repository.owner}/${repository.name}", Some(repository)) {
   @html.menu("code", repository, Some(branch), pathList.isEmpty, groupNames.isEmpty, info, error){
     <div class="head">
+      <div class="pull-right"><div class="btn-group">
+        <a href="@url(repository)/find/@encodeRefName(branch)" class="btn btn-mini" data-toggle="tooltip" data-placement="bottom" data-hotkey="t" title="Quickly jump between files"><i class="icon icon-th-list"></i></a>
+        @if(pathList.nonEmpty){
+          <a href="@url(repository)/commits/@encodeRefName(branch)/@pathList.mkString("/")" class="btn btn-mini" data-toggle="tooltip" data-placement="bottom" title="Browse commits for this branch"><i class="icon icon-time"></i></a>
+        }
+      </div></div>
+      @branchPullRequest.map{ case (pullRequest, issue) =>
+        <a href="@url(repository)/pull/@pullRequest.issueId" class="btn btn-pullrequest-branch btn-mini" title="@issue.title" data-toggle="tooltip">#@pullRequest.issueId</a>
+      }.getOrElse{
+        <a href="@url(repository)/compare?head=@urlEncode(encodeRefName(branch))" class="btn btn-success btn-mini"><i class="icon-white icon-retweet" data-toggle="tooltip" title="Compare, review, create a pull request"></i></a>
+      }
       @helper.html.branchcontrol(
         branch,
         repository,
@@ -27,7 +39,7 @@
         <a href="@url(repository)/tree/@encodeRefName(branch)/@pathList.take(i + 1).mkString("/")">@section</a> /
       }
       @if(hasWritePermission){
-        <a href="@url(repository)/new/@encodeRefName(branch)/@pathList.mkString("/")"><img src="@assets/common/images/newfile.png"/></a>
+        <a href="@url(repository)/new/@encodeRefName(branch)/@pathList.mkString("/")" title="Create a new file here" style="text-decoration: none;">+</i></a>
       }
     </div>
     <table class="table table-file-list">
@@ -76,12 +88,12 @@
         <td width="16">
         @if(file.isDirectory){
           @if(file.linkUrl.isDefined){
-            <img src="@assets/common/images/folder_link.png"/>
+            <i class="octicon octicon-file-symlink-directory"></i>
           } else {
-            <img src="@assets/common/images/folder.png"/>
+            <i class="octicon octicon-file-directory"></i>
           }
         } else {
-          <img src="@assets/common/images/file.png"/>
+          <i class="octicon octicon-file-text"></i>
         }
         </td>
         <td>
@@ -116,7 +128,7 @@
     @readme.map { case(filePath, content) =>
       <div id="readme">
         <div class="box-header">@filePath.reverse.head</div>
-        <div class="box-content markdown-body">@renderMarkup(filePath, content, branch, repository, false, false)</div>
+        <div class="box-content markdown-body">@renderMarkup(filePath, content, branch, repository, false, false, true)</div>
       </div>
     }
   }

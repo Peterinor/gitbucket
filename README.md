@@ -54,20 +54,22 @@ For Installation on Windows Server with IIS see [this wiki page](https://github.
 ### Mac OS X
 #### Installing Via Homebrew
 
-    $ brew install gitbucket
-    ==> Downloading https://github.com/takezoe/gitbucket/releases/download/1.10/gitbucket.war
-    ######################################################################## 100.0%
-    ==> Caveats
-    Note: When using launchctl the port will be 8080.
+```
+$ brew install gitbucket
+==> Downloading https://github.com/takezoe/gitbucket/releases/download/1.10/gitbucket.war
+######################################################################## 100.0%
+==> Caveats
+Note: When using launchctl the port will be 8080.
 
-    To have launchd start gitbucket at login:
-        ln -sfv /usr/local/opt/gitbucket/*.plist ~/Library/LaunchAgents
-    Then to load gitbucket now:
-        launchctl load ~/Library/LaunchAgents/homebrew.mxcl.gitbucket.plist
-    Or, if you don't want/need launchctl, you can just run:
-        java -jar /usr/local/opt/gitbucket/libexec/gitbucket.war
-    ==> Summary
-    /usr/local/Cellar/gitbucket/1.10: 3 files, 42M, built in 11 seconds
+To have launchd start gitbucket at login:
+    ln -sfv /usr/local/opt/gitbucket/*.plist ~/Library/LaunchAgents
+Then to load gitbucket now:
+    launchctl load ~/Library/LaunchAgents/homebrew.mxcl.gitbucket.plist
+Or, if you don't want/need launchctl, you can just run:
+    java -jar /usr/local/opt/gitbucket/libexec/gitbucket.war
+==> Summary
+/usr/local/Cellar/gitbucket/1.10: 3 files, 42M, built in 11 seconds
+```
 
 #### Manual Installation
 On OS X, copy the [gitbucket.plist](https://raw.github.com/takezoe/gitbucket/master/contrib/macosx/gitbucket.plist) file to `~/Library/LaunchAgents/`
@@ -79,6 +81,32 @@ Run the following commands in `Terminal` to
 
 Release Notes
 --------
+### 3.4 - 27 Jun 2015
+- Declarative style plug-in definition
+- New extension point to add markup render
+- go-import support
+
+### 3.3 - 31 May 2015
+- Rich graphical diff for images
+- File finder is available in the repository viewer
+- Blame is displayed at the source viewer
+- Remain user data and repositories even if user is disabled
+- Mobile view improvement
+
+### 3.2 - 3 May 2015
+- Directory history button
+- Compare / pull request button
+- Limit of activity log
+
+### 3.1.1 - 4 Apr 2015
+- Rolled back H2 version to avoid version compatibility issue
+- Plug-ins became possible to access ServletContext
+
+### 3.1 - 28 Mar 2015
+- Web APIs for Jenkins github pull-request builder
+- Improved diff view
+- Bump Scalatra to 2.3.1, sbt to 0.13.8
+
 ### 3.0 - 3 Mar 2015
 - New plug-in system is available
 - Connection pooling by c3p0
@@ -265,3 +293,7 @@ Release Notes
 
 ### 1.0 - 04 Jul 2013
 - This is a first public release
+
+Sponsors
+--------
+[![IntelliJ IDEA](https://www.jetbrains.com/idea/docs/logo_intellij_idea.png)](https://www.jetbrains.com/idea/)
