@@ -14,12 +14,13 @@ The current version of GitBucket provides a basic features below:
 - Wiki
 - Issues
 - Fork / Pull request
-- Mail notification
+- Email notification
 - Activity timeline
 - User management (for Administrators)
-- Group (like Organization in Github)
+- Group (like Organization in GitHub)
 - LDAP integration
 - Gravatar support
+- Plug-in system
 
 Following features are not implemented, but we will make them in the future release!
 
@@ -36,7 +37,7 @@ Installation
 2. Deploy it to the Servlet 3.0 container such as Tomcat 7.x, Jetty 8.x, GlassFish 3.x or higher.
 3. Access **http://[hostname]:[port]/gitbucket/** using your web browser.
 
-If you are using Gitbucket behind a webserver please make sure you have increased the **client_max_body_size** (on nignx)
+If you are using Gitbucket behind a webserver please make sure you have increased the **client_max_body_size** (on nginx)
 
 The default administrator account is **root** and password is **root**.
 
@@ -79,8 +80,28 @@ Run the following commands in `Terminal` to
 - start gitbucket: `launchctl load ~/Library/LaunchAgents/gitbucket.plist`
 - stop gitbucket: `launchctl unload ~/Library/LaunchAgents/gitbucket.plist`
 
+Plug-ins
+--------
+GitBucket has the plug-in system to extend GitBucket from outside of GitBucket. Some plug-ins are available now:
+
+- [gitbucket-gist-plugin](https://github.com/takezoe/gitbucket-gist-plugin)
+- [gitbucket-announce-plugin](https://github.com/McFoggy/gitbucket-announce-plugin)
+- [gitbucket-h2-backup-plugin](https://github.com/McFoggy/gitbucket-h2-backup-plugin)
+
 Release Notes
 --------
+### 3.6 - 30 Aug 2015
+- User interface Improvements: Especially, commit list, issues and pull request have been updated largely.
+- Installed plugins list has been available at the system administration console.
+- Pages and repository list in the sidebar have been limited and more pages and repositories link is available.
+- More reference link notation in Markdown has been supported.
+
+### 3.5 - 1 Aug 2015
+- Octicons has been applied
+- Global header has been enhanced. Now it's further similar to GitHub.
+- Default compare / pull request target has been changed to the parent repository
+- A lot of updates for [gitbucket-gist-plugin](https://github.com/takezoe/gitbucket-gist-plugin)
+
 ### 3.4 - 27 Jun 2015
 - Declarative style plug-in definition
 - New extension point to add markup render

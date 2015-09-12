@@ -41,7 +41,7 @@
     <form id="search" action="@path/search" method="POST">
       <div class="navbar">
         <div class="navbar-inner">
-          <div class="container" style="width: 920px;">
+          <div class="container" style="width: 980px;">
             <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
               <span class="icon-bar"></span>
               <span class="icon-bar"></span>
@@ -66,15 +66,16 @@
             <div class="nav-collapse collapse pull-right header-menu">
               @if(loginAccount.isDefined){
                 <div class="btn-group" style="margin-top: 0px;">
-                  <a class="dropdown-toggle menu" data-toggle="dropdown" href="#"><i class="octicon octicon-plus" style="font-size: 20px; vertical-align: top; margin-top: 10px;"></i><span class="caret" style="vertical-align: middle;"></span></a>
-                  <ul class="dropdown-menu">
+                  <a class="dropdown-toggle menu" data-toggle="dropdown" href="#"><i class="octicon octicon-plus" style="font-size: 20px; vertical-align: middle;height:20px !important;"></i><span class="caret" style="vertical-align: middle;"></span></a>
+                  <ul class="dropdown-menu pull-right">
                     <li><a href="@path/new">New repository</a></li>
                     <li><a href="@path/groups/new">New group</a></li>
                   </ul>
                 </div>
                 <div class="btn-group" style="margin-top: 0px;">
                   <a class="dropdown-toggle menu" data-toggle="dropdown" href="#" data-toggle="tooltip" data-placement="bottom" title="Signed is as @loginAccount.get.userName">@avatar(loginAccount.get.userName, 16)<span class="caret" style="vertical-align: middle;"></span></a>
-                  <ul class="dropdown-menu">
+                  <ul class="dropdown-menu pull-right">
+                    <li><a href="@url(loginAccount.get.userName)">Your profile</a></li>
                     <li><a href="@url(loginAccount.get.userName)/_edit">Account settings</a></li>
                     @if(loginAccount.get.isAdmin){
                       <li><a href="@path/admin/users">System administration</a></li>
